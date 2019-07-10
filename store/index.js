@@ -7,15 +7,7 @@ import utf8 from 'crypto-js/enc-utf8';
 
 
 function makeSecret(fromKey=null) {
-	let rawKey, key;
-	if (fromKey === null) {
-		rawKey = WordArray.random(9);
-		key = Base64.stringify(rawKey);
-	} else {
-		key = fromKey;
-		rawKey = WordArray.init(Base64.parse(fromKey));
-	}
-
+	const key = fromKey !== null ? fromKey : (new TextDecoder).decode(crypto.getRandomValues(new Uint8Array(8)).map(x => parseInt(x)*(0x7e-0x21)/255 + 0x21)).replace(/&/g, '~');
 	const cryptKey = sha256(key);
 	const roomID = sha256(cryptKey);
 
