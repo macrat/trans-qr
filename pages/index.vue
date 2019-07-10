@@ -27,8 +27,9 @@ main > * {
     margin: 2px;
     border-radius: 36px;
     color: #333;
+	text-decoration: none;
 }
-a.open-button:focus {
+.open-button:focus {
     outline: none;
     box-shadow: 0 0 8px 3px #9999ee66;
 }
@@ -43,7 +44,7 @@ a.open-button:focus {
 
 <template>
         <transition-group tag=main>
-            <text-card v-for="card in $store.state.cards" :key=card.id :value=card></text-card>
+            <text-card v-for="card in $store.state.cards" :key=card.secret.key :value=card></text-card>
             <b-card id=operation-card key=operation-card>
                 <a href v-ripple class=open-button @click.prevent="$store.commit('create')"><i class="fas fa-qrcode"></i></a>
                 <a href v-ripple class=open-button @click.prevent><i class="fas fa-camera"></i></a>
@@ -58,14 +59,16 @@ import TextCard from '~/components/TextCard';
 export default {
     components: {TextCard},
     created() {
-        let cards = this.$route.query.card;
-        if (typeof cards === 'string') {
-            cards = [cards];
+        let keyes = this.$route.query.key;
+        if (typeof keyes === 'string') {
+            keyes = [keyes];
         }
-        if (cards) {
-            cards.forEach(id => this.$store.commit('open', {id}));
-        }
-        history.replaceState(null, null, location.origin + location.pathname);
+        if (keyes) {
+            keyes.forEach(key => this.$store.commit('open', {secret: {key}}));
+			history.replaceState(null, null, location.origin + location.pathname);
+        } else {
+			this.$store.commit('create');
+		}
     },
 }
 </script>

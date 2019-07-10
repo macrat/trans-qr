@@ -4,6 +4,7 @@
   "description": "transport file via QR Code",
   "main": "index.js",
   "scripts": {
+    "dev": "nuxt dev -s",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,6 +21,7 @@
     "@chenfengyuan/vue-qrcode": "^1.0.1",
     "@nuxtjs/dotenv": "^1.3.0",
     "bootstrap-vue": "^2.0.0-rc.26",
+    "crypto-js": "^3.1.9-1",
     "nuxt": "^2.8.1",
     "skyway-js": "^2.0.1",
     "vue-ripple-directive": "^2.0.1"

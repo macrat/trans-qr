@@ -1,9 +1,31 @@
 import Peer from 'skyway-js';
+import AES from 'crypto-js/aes';
+import Base64 from 'crypto-js/enc-base64';
+import WordArray from 'crypto-js/lib-typedarrays';
+import sha256 from 'crypto-js/sha256';
+import utf8 from 'crypto-js/enc-utf8';
 
 
-function makeRandomID() {
-    const chars = (new TextDecoder).decode(Uint8Array.from({length: 0x7e-0x21+1}).map((_, i) => i+0x21));
-    return [...crypto.getRandomValues(new Uint8Array(8))].map(x => chars[parseInt(x*chars.length/255)]).join('');
+class Secret {
+	constructor(key=null) {
+		if (key) {
+			this.key = key;
+			this.rawKey = WordArray.init(Base64.parse(this.key));
+		} else {
+			this.rawKey = WordArray.random(8);
+			this.key = Base64.stringify(this.rawKey);
+		}
+		this.cryptKey = sha256(this.rawKey).toString();
+		this.roomID = sha256(this.cryptKey).toString();
+	}
+
+	encrypt(data) {
+		return AES.encrypt(JSON.stringify(data), this.cryptKey).toString();
+	}
+
+	decrypt(data) {
+		return JSON.parse(AES.decrypt(data, this.cryptKey).toString(utf8));
+	}
 }
 
 
@@ -17,7 +39,6 @@ export const plugins = [store => {
         store.commit('connected');
 
         store.state.cards.forEach(card => {
-            console.log(card);
             store.commit('open', card);
         });
     });
@@ -42,32 +63,42 @@ export const mutations = {
         state.connected = false;
     },
 
-    open(state, {id}) {
-        if (state.connected && peer.rooms[id] === undefined) {
-            const room = peer.joinRoom(id);
-            room.on('open', () => this.commit('opened', {id}));
-            room.on('close', () => this.commit('closed', {id}));
-            room.on('data', ({data}) => {
+    open(state, {secret}) {
+		secret = new Secret(secret.key);
+
+        if (state.connected && peer.rooms[secret.roomID] === undefined) {
+            const room = peer.joinRoom(secret.roomID);
+            room.on('open', () => this.commit('opened', {secret}));
+            room.on('close', () => this.commit('closed', {secret}));
+            room.on('data', ({data: raw}) => {
+				const data = secret.decrypt(raw);
+
                 switch (data.method) {
                 case 'update':
-                    this.commit('update-received', {id: id, text: data.text});
+                    this.commit('update-received', {secret: secret, text: data.text});
                     break;
                 }
             });
             room.once('log', data => {
-                for (let i=data.length-1; i>=0; i--) {
+                for (let i=data.length-1; i>0; i--) {
                     const {messageType, message, timestamp} = JSON.parse(data[i]);
-                    if (messageType === "ROOM_DATA") {
-                        this.commit('update-received', {id: id, text: message.data.text});
-                        break;
-                    }
+
+                    if (messageType !== "ROOM_DATA") {
+						continue;
+					}
+
+					const dec = secret.decrypt(message.data);
+					if (dec.method === 'update') {
+						this.commit('update-received', {secret: secret, text: dec.text});
+						break;
+					}
                 }
             });
             room.getLog();
         }
 
-        if (state.cards.filter(x => x.id === id).length === 0) {
-            state.cards.push({id: id, text: ''});
+        if (state.cards.filter(x => x.secret.roomID === secret.roomID).length === 0) {
+            state.cards.push({secret: secret, text: ''});
         }
     },
 
@@ -75,29 +106,29 @@ export const mutations = {
     },
 
     create() {
-        this.commit('open', {id: makeRandomID()})
+        this.commit('open', {secret: new Secret()})
     },
 
-    close(state, {id}) {
-        peer.rooms[id].close();
-        state.cards = state.cards.filter(x => x.id !== id);
+    close(state, {secret}) {
+        peer.rooms[secret.roomID].close();
+        state.cards = state.cards.filter(x => x.secret.roomID !== secret.roomID);
     },
 
     closed() {
     },
 
-    'update-received': function(state, {id, text}) {
-        state.cards.filter(x => x.id === id).forEach(card => {
+    'update-received': function(state, {secret, text}) {
+        state.cards.filter(x => x.secret.roomID === secret.roomID).forEach(card => {
             card.text = text;
         });
     },
 
-    update(state, {id, text}) {
-        peer.rooms[id].send({
+    update(state, {secret, text}) {
+        peer.rooms[secret.roomID].send(secret.encrypt({
             method: 'update',
             text: text,
-        });
-        state.cards.filter(x => x.id === id).forEach(card => {
+        }));
+        state.cards.filter(x => x.secret.roomID === secret.roomID).forEach(card => {
             card.text = text;
         });
     },

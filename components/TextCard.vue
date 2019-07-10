@@ -62,10 +62,10 @@ textarea:focus {
             <div class=button-list>
                 <div v-ripple class=button><i class="fas fa-code-branch"></i></div>
                 <div v-ripple class=button><i class="fas fa-expand"></i></div>
-                <div v-ripple class=button @click="$store.commit('close', {id: value.id})"><i class="fas fa-times"></i></div>
+                <div v-ripple class=button @click="$store.commit('close', {secret: value.secret})"><i class="fas fa-times"></i></div>
             </div>
         </div>
-        <textarea ref=text :value=value.text @input="$store.commit('update', {id: value.id, text: $event.target.value})"></textarea>
+        <textarea ref=text :value=value.text @input="$store.commit('update', {secret: value.secret, text: $event.target.value})"></textarea>
     </b-card>
 </template>
 
@@ -81,14 +81,13 @@ export default {
             width: 60,
             height: 60,
             margin: 0,
-            errorCorrectionLevel: 'L',
             color: {
                 light: '#ffffff00',
                 dark: '#000000ff',
             },
         }),
         url() {
-            return `${location.origin}${location.pathname}?card=${this.value.id}`;
+            return `${location.origin}${location.pathname}?key=${this.value.secret.key}`;
         },
     },
     mounted() {
