@@ -9,6 +9,5 @@ export default {
     ],
     modules: [
         '@nuxtjs/dotenv',
-        'bootstrap-vue/nuxt',
     ],
 }
