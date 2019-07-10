@@ -6,26 +6,34 @@ import sha256 from 'crypto-js/sha256';
 import utf8 from 'crypto-js/enc-utf8';
 
 
-class Secret {
-	constructor(key=null) {
-		if (key) {
-			this.key = key;
-			this.rawKey = WordArray.init(Base64.parse(this.key));
-		} else {
-			this.rawKey = WordArray.random(8);
-			this.key = Base64.stringify(this.rawKey);
-		}
-		this.cryptKey = sha256(this.rawKey).toString();
-		this.roomID = sha256(this.cryptKey).toString();
+function makeSecret(fromKey=null) {
+	let rawKey, key;
+	if (fromKey === null) {
+		rawKey = WordArray.random(9);
+		key = Base64.stringify(rawKey);
+	} else {
+		key = fromKey;
+		rawKey = WordArray.init(Base64.parse(fromKey));
 	}
 
-	encrypt(data) {
-		return AES.encrypt(JSON.stringify(data), this.cryptKey).toString();
-	}
+	const cryptKey = sha256(key);
+	const roomID = sha256(cryptKey);
 
-	decrypt(data) {
-		return JSON.parse(AES.decrypt(data, this.cryptKey).toString(utf8));
-	}
+	return {
+		key: key,
+		cryptKey: cryptKey.toString(),
+		roomID: roomID.toString()
+	};
+}
+
+
+function encrypt(secret, data) {
+	return AES.encrypt(JSON.stringify(data), secret.cryptKey).toString();
+}
+
+
+function decrypt(secret, data) {
+	return JSON.parse(AES.decrypt(data, secret.cryptKey).toString(utf8));
 }
 
 
@@ -63,15 +71,15 @@ export const mutations = {
         state.connected = false;
     },
 
-    open(state, {secret}) {
-		secret = new Secret(secret.key);
+    open(state, {secret: {key}}) {
+		const secret = makeSecret(key);
 
         if (state.connected && peer.rooms[secret.roomID] === undefined) {
             const room = peer.joinRoom(secret.roomID);
             room.on('open', () => this.commit('opened', {secret}));
             room.on('close', () => this.commit('closed', {secret}));
             room.on('data', ({data: raw}) => {
-				const data = secret.decrypt(raw);
+				const data = decrypt(secret, raw);
 
                 switch (data.method) {
                 case 'update':
@@ -87,7 +95,7 @@ export const mutations = {
 						continue;
 					}
 
-					const dec = secret.decrypt(message.data);
+					const dec = decrypt(secret, message.data);
 					if (dec.method === 'update') {
 						this.commit('update-received', {secret: secret, text: dec.text});
 						break;
@@ -97,7 +105,7 @@ export const mutations = {
             room.getLog();
         }
 
-        if (state.cards.filter(x => x.secret.roomID === secret.roomID).length === 0) {
+        if (state.cards.filter(x => x.secret.key === secret.key).length === 0) {
             state.cards.push({secret: secret, text: ''});
         }
     },
@@ -106,29 +114,29 @@ export const mutations = {
     },
 
     create() {
-        this.commit('open', {secret: new Secret()})
+        this.commit('open', {secret: makeSecret()})
     },
 
     close(state, {secret}) {
         peer.rooms[secret.roomID].close();
-        state.cards = state.cards.filter(x => x.secret.roomID !== secret.roomID);
+        state.cards = state.cards.filter(x => x.secret.key !== secret.key);
     },
 
     closed() {
     },
 
     'update-received': function(state, {secret, text}) {
-        state.cards.filter(x => x.secret.roomID === secret.roomID).forEach(card => {
+        state.cards.filter(x => x.secret.key === secret.key).forEach(card => {
             card.text = text;
         });
     },
 
     update(state, {secret, text}) {
-        peer.rooms[secret.roomID].send(secret.encrypt({
+        peer.rooms[secret.roomID].send(encrypt(secret, {
             method: 'update',
             text: text,
         }));
-        state.cards.filter(x => x.secret.roomID === secret.roomID).forEach(card => {
+        state.cards.filter(x => x.secret.key === secret.key).forEach(card => {
             card.text = text;
         });
     },
