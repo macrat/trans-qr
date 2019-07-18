@@ -5,6 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "nuxt dev -s",
+    "build": "nuxt build -s",
+    "start": "nuxt start --hostname 0.0.0.0",
+    "generate": "cross-env NODE_ENV=production DEPLOY_ENV=GH_PAGES nuxt generate -s",
+    "deploy": "push-dir --dir=dist --branch=gh-pages",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -24,5 +28,9 @@
     "nuxt": "^2.8.1",
     "skyway-js": "^2.0.1",
     "vue-ripple-directive": "^2.0.1"
+  },
+  "devDependencies": {
+    "cross-env": "^5.2.0",
+    "push-dir": "^0.4.1"
   }
 }
