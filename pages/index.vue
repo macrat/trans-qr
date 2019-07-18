@@ -15,7 +15,7 @@ main {
     margin: 2px;
     border-radius: 100%;
     color: #333;
-	text-decoration: none;
+    text-decoration: none;
 }
 .open-button:focus {
     outline: none;
@@ -54,10 +54,10 @@ export default {
         }
         if (keyes) {
             keyes.forEach(key => this.$store.commit('open', {secret: {key}}));
-			history.replaceState(null, null, location.origin + location.pathname);
+            history.replaceState(null, null, location.origin + location.pathname);
         } else {
-			this.$store.commit('create');
-		}
+            this.$store.commit('create');
+        }
     },
 }
 </script>

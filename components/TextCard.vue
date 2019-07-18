@@ -21,7 +21,7 @@
 
     width: 20px;
     height: 20px;
-	font-size: 24px;
+    font-size: 24px;
     border-radius: 100%;
 
     padding: 12px;
@@ -38,11 +38,11 @@ textarea {
     background-color: transparent;
     resize: none;
 
-	margin-top: 10px;
+    margin-top: 10px;
     padding-top: 10px;
     border: 0;
     border-top: 1px solid #ccc;
-	font-size: 120%;
+    font-size: 120%;
 }
 textarea:focus {
     outline: none;
@@ -53,12 +53,12 @@ textarea:focus {
 </style>
 
 <template>
-    <simple-card>
+    <simple-card :fullscreen=fullscreen>
         <div class=header>
             <a :href=url tabindex=-1><qr-code class=qrcode :value=url :options=qrOptions tag=img /></a>
             <div class=button-list>
                 <div v-ripple class=button><i class="fas fa-code-branch"></i></div>
-                <div v-ripple class=button><i class="fas fa-expand"></i></div>
+                <div v-ripple class=button @click="fullscreen = !fullscreen"><i class="fas" :class="{'fa-expand': !fullscreen, 'fa-compress': fullscreen}"></i></div>
                 <div v-ripple class=button @click="$store.commit('close', {secret: value.secret})"><i class="fas fa-times"></i></div>
             </div>
         </div>
@@ -75,6 +75,9 @@ import SimpleCard from '~/components/SimpleCard';
 export default {
     props: ['value'],
     components: {QrCode, SimpleCard},
+    data: () => ({
+        fullscreen: false,
+    }),
     computed: {
         qrOptions: () => ({
             width: 60,
