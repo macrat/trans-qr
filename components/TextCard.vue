@@ -57,7 +57,7 @@ textarea:focus {
         <div class=header>
             <a :href=url tabindex=-1><qr-code class=qrcode :value=url :options=qrOptions tag=img /></a>
             <div class=button-list>
-                <div v-ripple class=button><i class="fas fa-code-branch"></i></div>
+                <!-- <div v-ripple class=button><i class="fas fa-code-branch"></i></div> -->
                 <div v-ripple class=button @click="fullscreen = !fullscreen"><i class="fas" :class="{'fa-expand': !fullscreen, 'fa-compress': fullscreen}"></i></div>
                 <div v-ripple class=button @click="$store.commit('close', {secret: value.secret})"><i class="fas fa-times"></i></div>
             </div>
